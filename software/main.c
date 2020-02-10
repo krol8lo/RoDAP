@@ -1,48 +1,48 @@
 /*
 main.c
 Program robota minisumo o nazwie RoDAP
-Projekt pÅ‚ytki i schemat dostÄ™pne na githube:
+Projekt p³ytki i schemat dostêpne na githube:
 github.com/krol8lo
 Mikrokontroler to ATmega328
 
 Uwaga!
-Projekt jest udostÄ™pniany jako pomoc naukowa.
-CaÅ‚oÅ›Ä‡ powstawaÅ‚a dwa tygodnie, w zwiÄ…zku z tym ani hardware ani software nie sÄ… najpiÄ™kniejsze.
-Nie wszystkie rozwiÄ…zania sÄ… mÄ…dre i warte powtÃ³rzenia - naleÅ¼y czytaÄ‡ komentarze.
-KRÃ“L 2019
+Projekt jest udostêpniany jako pomoc naukowa.
+Ca³oœæ powstawa³a dwa tygodnie, w zwi¹zku z tym ani hardware ani software nie s¹ najpiêkniejsze.
+Nie wszystkie rozwi¹zania s¹ m¹dre i warte powtórzenia - nale¿y czytaæ komentarze.
+KRÓL 2019
 */
 
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
 
-//Definicje rejestrÃ³w timerÃ³w - Å‚atwiejsze w uÅ¼yciu
+//Definicje rejestrów timerów - ³atwiejsze w u¿yciu
 #define L_PWM OCR1AL
 #define R_PWM OCR1BL
 
-//MoÅ¼na teÅ¼ zastosowaÄ‡ const
+//Mo¿na te¿ zastosowaæ const
 #define REVERSE_TIME 60
 #define DEFAULT_PWM 200
 
-//Struktura przechowujÄ…ca dane z czujnikÃ³w przeciwnika - czytelnoÅ›Ä‡ kodu
+//Struktura przechowuj¹ca dane z czujników przeciwnika - czytelnoœæ kodu
 volatile struct sensors_data
 {
 	uint8_t front[2];
 	uint8_t rear[2];
 	uint8_t front_last[2];
 	uint8_t enemy;
-} enemy;							//Niezbyt szczÄ™Å›liwie dobrana nazwa - enemy.enemy wyglÄ…da kiepsko
+} enemy;							//Niezbyt szczêœliwie dobrana nazwa - enemy.enemy wygl¹da kiepsko
 
 /*
-Bardzo brzydka obsÅ‚uga startera z uÅ¼yciem dwÃ³ch zmiennych
-ZostaÅ‚a zrobiona w ten sposÃ³b ze wzglÄ™du na trudne do naprawy bÅ‚Ä™dy w poprzednich prÃ³bach implementacji startera
+Bardzo brzydka obs³uga startera z u¿yciem dwóch zmiennych
+Zosta³a zrobiona w ten sposób ze wzglêdu na trudne do naprawy b³êdy w poprzednich próbach implementacji startera
 */
 volatile uint8_t starta, startb;
 
-uint8_t line[2];					//Stan czujnikÃ³w linii
+uint8_t line[2];					//Stan czujników linii
 uint8_t pit;						//Tryb serwisowy(pitstop)
 
-//Zmenne sterujÄ…ce skrÄ™caniem i zawracaniem
+//Zmenne steruj¹ce skrêcaniem i zawracaniem
 volatile char turn;
 volatile uint8_t turn_time;
 
@@ -50,7 +50,7 @@ void set_leds(uint8_t a, uint8_t b);
 void enable_sensors(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
 void line_read();
 void batt_read();
-void go(int8_t dir_l, int8_t dir_r);	//Ustawia kierunek obrotu kÃ³Å‚(1 - przÃ³d, -1 - tyÅ‚, 0 - stop) - czytelnoÅ›Ä‡ kodu
+void go(int8_t dir_l, int8_t dir_r);	//Ustawia kierunek obrotu kó³(1 - przód, -1 - ty³, 0 - stop) - czytelnoœæ kodu
 void stop();							//Zatrzyanie
 
 int main(void)
@@ -69,9 +69,9 @@ int main(void)
 	ADCSRA = _BV(ADEN);
 	
 	/*
-	Nie byÅ‚o tego na zajÄ™ciach - pin change interrupt
-	Pozwala na wyprowadzenie przerwania na prawie kaÅ¼dym pinie GPIO,
-	ale wymaga sprawdzenia, ktÃ³ry pin wygenerowaÅ‚ przerwanie - patrz niÅ¼ej
+	Nie by³o tego na zajêciach - pin change interrupt
+	Pozwala na wyprowadzenie przerwania na prawie ka¿dym pinie GPIO,
+	ale wymaga sprawdzenia, który pin wygenerowa³ przerwanie - patrz ni¿ej
 	*/
 	PCICR = _BV(PCIE2) | _BV(PCIE1);
 	PCMSK2 = _BV(PCINT22) | _BV(PCINT16);
@@ -91,7 +91,7 @@ int main(void)
 	enemy.enemy = 0;
 	pit = 0;
 	
-	//Mruganie ledami na poczÄ…tku kodu pozwala znajdowaÄ‡ przypadkowe resety
+	//Mruganie ledami na pocz¹tku kodu pozwala znajdowaæ przypadkowe resety
 	set_leds(1,0);
 	_delay_ms(200);
 	set_leds(0,1);
@@ -109,7 +109,7 @@ int main(void)
 			if(PORTD & _BV(PD4))
 			{
 				pit = ~pit;
-				if(pit)						//Tryb pitstopu - krÄ™cenie koÅ‚ami uÅ‚atwia czyszczenie kÃ³Å‚
+				if(pit)						//Tryb pitstopu - krêcenie ko³ami u³atwia czyszczenie kó³
 				{
 					go(1,1);
 					L_PWM = R_PWM = DEFAULT_PWM;
@@ -126,10 +126,10 @@ int main(void)
 		{
 			set_leds(0,0);
 			/*
-			MaÅ‚e oszustwo - kierunek obrotu na poczÄ…tku wybierany jest przeÅ‚Ä…cznikiem.
-			Pozwala to na szybsze znalenienie przeciwnika - krÃ³tszy obrÃ³t.
-			Technika czÄ™sto stosowana na zawodach czasem implementowana teÅ¼ za pomocÄ… czujnikÃ³w -
-			przed startem pokazujesz robotowi kierunek zasÅ‚aniajÄ…c jeden z czujnikÃ³w.
+			Ma³e oszustwo - kierunek obrotu na pocz¹tku wybierany jest prze³¹cznikiem.
+			Pozwala to na szybsze znalenienie przeciwnika - krótszy obrót.
+			Technika czêsto stosowana na zawodach czasem implementowana te¿ za pomoc¹ czujników -
+			przed startem pokazujesz robotowi kierunek zas³aniaj¹c jeden z czujników.
 			*/
 			if(PINC & _BV(PC5))
 			{
@@ -148,9 +148,9 @@ int main(void)
 		}
 		
 		/*
-		GÅ‚Ã³wna logika robota
-		Bardzo agresywne zatrzymywanie i zmiana kierunku obrotu kÃ³Å‚ ze wzglÄ™du na problemy z przyczepnoÅ›ciÄ… i sÅ‚abe silniki
-		Z punktu widzenia estetyki kodu trochÄ™ za duÅ¼o zagnieÅ¼dÅ¼onych if'Ã³w 
+		G³ówna logika robota
+		Bardzo agresywne zatrzymywanie i zmiana kierunku obrotu kó³ ze wzglêdu na problemy z przyczepnoœci¹ i s³abe silniki
+		Z punktu widzenia estetyki kodu trochê za du¿o zagnie¿d¿onych if'ów
 		*/
 		if(starta && !startb)
 		{
@@ -171,16 +171,22 @@ int main(void)
 					{
 						go(1,0);
 						L_PWM = 255;
+						turn = 'r';
+						TIMSK0 = _BV(OCIE0A);
+						turn_time = REVERSE_TIME*3;
 					}
 					else if(enemy.front[0])
 					{
 						go(0,1);
 						R_PWM = 255;
+						turn = 'r';
+						TIMSK0 = _BV(OCIE0A);
+						turn_time = REVERSE_TIME*3;
 					}
 					else
 					{
 						/*
-						Taka sytuacja moÅ¼e mieÄ‡ miejsce po przerwaniu
+						Taka sytuacja mo¿e mieæ miejsce po przerwaniu
 						*/
 						TIMSK0 = 0;
 						turn = 0;
@@ -190,8 +196,8 @@ int main(void)
 					}
 				}
 				/*
-				Tylko, gdy robot nie omija akurat krawÄ™dzi
-				Brak tego if'a powodowaÅ‚ bÅ‚Ä™dy
+				Tylko, gdy robot nie omija akurat krawêdzi
+				Brak tego if'a powodowa³ b³êdy
 				*/
 				else if(turn == 0 || turn == 'r')
 				{
@@ -214,7 +220,7 @@ int main(void)
 				}
 			}
 			/*
-			Gdy robot widzi przeciwnika ignoruje liniÄ™
+			Gdy robot widzi przeciwnika ignoruje liniê
 			*/
 			line_read();
 			if(line[0])
@@ -298,7 +304,7 @@ void enable_sensors(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 	}
 }
 
-void line_read()	//Odczyt czujnikÃ³w linii
+void line_read()	//Odczyt czujników linii
 {
 	//ADC6 - prawy
 	//ADC7 - lewy
@@ -306,17 +312,17 @@ void line_read()	//Odczyt czujnikÃ³w linii
 	ADCSRA |= _BV(ADSC);
 	while(ADCSRA & _BV(ADSC));
 	if(ADCH > 128)
-		line[1] = 0;
+	line[1] = 0;
 	else
-		line[1] = 1;
+	line[1] = 1;
 	
 	ADMUX |= _BV(MUX0);	//ADC7
 	ADCSRA |= _BV(ADSC);
 	while(ADCSRA & _BV(ADSC));
 	if(ADCH > 128)
-		line[0] = 0;
+	line[0] = 0;
 	else
-		line[0] = 1;
+	line[0] = 1;
 }
 
 void go(int8_t dir_l, int8_t dir_r)		//Sterowanie mostkami
@@ -380,7 +386,7 @@ void batt_read()		//Pomiar stanu akumulatora
 	while(ADCSRA & _BV(ADSC));
 	if(ADCH < 191)
 	{
-		for(uint8_t i = 0; i < 10; i++)		//Sygnalizacja niskiego napiÄ™cia
+		for(uint8_t i = 0; i < 10; i++)		//Sygnalizacja niskiego napiêcia
 		{
 			set_leds(1,0);
 			_delay_ms(50);
@@ -389,29 +395,22 @@ void batt_read()		//Pomiar stanu akumulatora
 		}
 	}
 	/*
-	PrzywrÃ³cenie rejestru do stanu poczÄ…tkowego dla funkcji line_read()
-	Niezbyt eleganckie rozwiÄ…zanie, ale za to szybsze - batt_read() wywoÅ‚ywane jest tylko po resecie
+	Przywrócenie rejestru do stanu pocz¹tkowego dla funkcji line_read()
+	Niezbyt eleganckie rozwi¹zanie, ale za to szybsze - batt_read() wywo³ywane jest tylko po resecie
 	*/
 	ADMUX = _BV(ADLAR) | _BV(REFS0) | _BV(MUX2) | _BV(MUX1);
 }
 
 /*
-ObsÅ‚uga przerwaÅ„ pin change
-WypeÅ‚nianie struktury enemy danymi z czujnikÃ³w w zaleÅ¼noÅ›ci od stanÃ³w pinÃ³w podczas przewania
+Obs³uga przerwañ pin change
+Wype³nianie struktury enemy danymi z czujników w zale¿noœci od stanów pinów podczas przewania
 */
 ISR(PCINT1_vect)
 {
 	enemy.front_last[1] = enemy.front[1];
 	enemy.rear[1] = !((PINC & _BV(PC2)) >> PC2);
 	enemy.front[1] = !((PINC & _BV(PC3)) >> PC3);
-	if(!(enemy.front[1] | enemy.rear[1] | enemy.front[0] | enemy.rear[0]) && enemy.front_last[1])
-	{
-		enemy.front[1] = enemy.front_last[1];
-	}
-	else
-	{
-		enemy.enemy = enemy.front[1] | enemy.rear[1];
-	}
+	enemy.enemy |= !(enemy.front[1] | enemy.rear[1] | enemy.front[0] | enemy.rear[0]);
 }
 
 ISR(PCINT2_vect)
@@ -419,17 +418,10 @@ ISR(PCINT2_vect)
 	enemy.front_last[0] = enemy.front[0];
 	enemy.rear[0] = !((PIND & _BV(PD0)) >> PD0);
 	enemy.front[0] = !((PIND & _BV(PD6)) >> PD6);
-	if(!(enemy.front[0] | enemy.rear[0] | enemy.front[1] | enemy.rear[1]) && enemy.front_last[0])
-	{
-		enemy.front[0] = enemy.front_last[0];
-	}
-	else
-	{
-		enemy.enemy = enemy.front[0] | enemy.rear[0];
-	}
+	enemy.enemy |= !(enemy.front[0] | enemy.rear[0] | enemy.front[1] | enemy.rear[1]);
 }
 
-ISR(TIMER0_COMPA_vect)	//Przerwanie timera sÅ‚uÅ¼Ä…ce do skrÄ™cania i zawracania przez okreÅ›lony czas (zmienna turn_time)
+ISR(TIMER0_COMPA_vect)	//Przerwanie timera s³u¿¹ce do skrêcania i zawracania przez okreœlony czas (zmienna turn_time)
 {
 	if(turn_time-- == 0)
 	{
@@ -444,5 +436,12 @@ ISR(TIMER0_COMPA_vect)	//Przerwanie timera sÅ‚uÅ¼Ä…ce do skrÄ™cania i zawracania
 ISR(INT0_vect)			//Starter
 {
 	if(PIND & _BV(PD2))
-	starta = startb = 1;
+	{
+		starta = startb = 1;
+	}
+	else
+	{
+		stop();
+		starta = 0;
+	}
 }
